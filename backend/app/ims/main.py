@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-import orjson
+import json
 import time
 
 from .config import settings
@@ -16,11 +16,15 @@ from .alerting import AlertRouter, Alert
 from .worker import celery_app
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
+
 app = FastAPI(
     title="Incident Management System",
     description="Mission-critical incident management with async processing",
     version="1.0.0"
 )
+
+
 
 # CORS for React frontend
 app.add_middleware(
@@ -111,7 +115,7 @@ async def ingest_signal(signal: SignalIngest):
     3. Return 202 Accepted immediately
     """
     # Use orjson for fast serialization
-    signal_dict = orjson.loads(orjson.dumps({
+    signal_dict = json.loads(json.dumps({
         "component_id": signal.component_id,
         "severity": signal.severity,
         "payload": signal.payload,
@@ -236,3 +240,9 @@ async def start_metrics_reporter():
             metrics["last_metrics_time"] = now
     
     asyncio.create_task(reporter())
+
+from .websocket import dashboard_websocket
+
+@app.websocket("/ws/dashboard")
+async def websocket_endpoint(websocket: WebSocket):
+    await dashboard_websocket(websocket)
