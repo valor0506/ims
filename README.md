@@ -40,29 +40,6 @@ Mission-critical incident management system for distributed stack monitoring.
 3. **Circuit breaker**: DB writes retry with exponential backoff
 4. **Metrics**: Console logs every 5s (signals/sec, queue depth, drop rate)
 
-## Quick Start
-
-```bash
-# Start databases
-docker-compose up -d
-
-# Install backend
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Terminal 1: API
-python run.py
-
-# Terminal 2: Worker
-celery -A app.ims.worker worker --loglevel=info
-
-# Terminal 3: Frontend
-cd ../frontend
-npm install
-npm run dev
-
 ## Incident Management System (IMS)
 
 | Method | Endpoint                 | Description      |
@@ -89,3 +66,28 @@ python generate_load.py
 | Resilience            | Retry logic, circuit breaker, health endpoint           |
 | Documentation         | This README + inline code docs                          |
 | Tech Stack            | Justified in Architecture section above                 |
+
+
+## Quick Start
+
+```bash
+# Start databases
+docker-compose up -d
+
+# Install backend
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Terminal 1: API
+python run.py
+
+# Terminal 2: Worker
+celery -A app.ims.worker worker --loglevel=info
+
+# Terminal 3: Frontend
+cd ../frontend
+npm install
+npm run dev
+
