@@ -124,7 +124,9 @@ async def ingest_signal(signal: SignalIngest):
     
     # Enqueue to Celery (non-blocking)
     try:
-        celery_app.send_task('ims.worker.process_signal', args=[signal_dict])
+        from .worker import process_signal
+
+        process_signal.delay(signal_dict)
         metrics["signals_received"] += 1
         return {
             "status": "accepted",

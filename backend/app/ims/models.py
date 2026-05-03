@@ -30,7 +30,7 @@ class WorkItemDB(Base):
     rca = Column(JSON, nullable=True)
     
     # MTTR calculated automatically by database
-    mttr_seconds = Column(Integer, nullable=True)
+    # mttr_seconds = Column(Integer, nullable=True)
     
     # Database-level constraint: Cannot close without RCA
     __table_args__ = (
