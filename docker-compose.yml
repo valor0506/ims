@@ -4,27 +4,45 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://redis:6379/0
       - POSTGRES_URL=postgresql+asyncpg://ims_user:ims_pass_123@postgres:5432/ims
       - MONGO_URL=mongodb://mongo:27017/ims
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0   # was missing in api service
     depends_on:
-      - redis
-      - postgres
-      - mongo
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   worker:
     build: ./backend
     environment:
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://redis:6379/0
       - POSTGRES_URL=postgresql+asyncpg://ims_user:ims_pass_123@postgres:5432/ims
       - MONGO_URL=mongodb://mongo:27017/ims
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
-      - redis
-      - postgres
-      - mongo
-    command: celery -A app.ims.worker worker --loglevel=info --concurrency=4
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    # prefork = multiple processes, each with its own event loop
+    # This is correct and safe with the asyncio.run() pattern in worker.py
+    command: celery -A app.ims.worker worker --loglevel=info --pool=prefork --concurrency=4
+    restart: on-failure
 
   postgres:
     image: timescale/timescaledb:latest-pg15
@@ -37,6 +55,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ims_user -d ims"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   mongo:
     image: mongo:6
@@ -44,18 +68,30 @@ services:
       - mongo_data:/data/db
     ports:
       - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   frontend:
     build: ./frontend
     ports:
       - "3000:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   postgres_data:
