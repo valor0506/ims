@@ -99,7 +99,7 @@ export function Dashboard() {
 
 function IncidentCard({ incident }: { incident: WorkItem }) {
   const config = SEVERITY_CONFIG[incident.severity];
-  const StatusIcon = config.icon;
+  // const StatusIcon = config.icon;
 
   return (
     <Link to={`/incident/${incident.id}`}>
